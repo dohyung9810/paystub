@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>급여명세서 생성기</title>
+  <style>
+    :root {
+      --blue: #1c6fdc;
+      --blue-soft: #e7f0ff;
+      --border: #d0d4dd;
+      --bg: #f3f4f7;
+      --text-main: #1f2933;
+      --text-sub: #6b7280;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h1 span.logo-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--blue);
+      display: inline-block;
+    }
+
+    .app-shell {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .sub-text {
+      color: var(--text-sub);
+      font-size: 13px;
+      margin-bottom: 18px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(380px, 1fr);
+      gap: 18px;
+      align-items: flex-start;
+    }
+
+    .pane {
+      background: #fff;
+      border-radius: 14px;
+      padding: 18px 18px 16px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+    }
+
+    .pane-input {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pane-input::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, rgba(52, 112, 255, 0.08), transparent 60%);
+      pointer-events: none;
+    }
+
+    .pane-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .pane-title {
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chip {
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: var(--text-sub);
+    }
+
+    .pane-body {
+      position: relative;
+      z-index: 1;
+      margin-top: 4px;
+    }
+
+    .field-group-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin: 12px 0 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #111827;
+    }
+
+    .field-group-title::before {
+      content: "";
+      width: 4px;
+      height: 12px;
+      border-radius: 999px;
+      background: var(--blue);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+    }
+
+    .field label {
+      color: var(--text-sub);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="month"] {
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      font-size: 13px;
+      outline: none;
+      background: #f9fafb;
+      transition: border 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="month"]:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    table th,
+    table td {
+      border: 1px solid #e5e7eb;
+      padding: 5px 6px;
+      text-align: left;
+    }
+
+    table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .btn {
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+      justify-content: center;
+      background: #e5e7eb;
+      color: #111827;
+      transition: background 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease,
+        border-color 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1d4ed8);
+    }
+
+    .btn-outline {
+      background: #fff;
+      border-color: #d1d5db;
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: #b91c1c;
+      border-color: #fecaca;
+    }
+
+    .btn-icon {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .btn-row {
+      margin-top: 12px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .table-mini {
+      margin-top: 4px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+    }
+
+    .table-mini table th,
+    .table-mini table td {
+      border-color: #e5e7eb;
+      padding: 4px 6px;
+    }
+
+    .table-mini table th {
+      background: #f3f4ff;
+      font-size: 11px;
+    }
+
+    .table-mini table td input {
+      width: 100%;
+    }
+
+    .badge-soft {
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    /* 직원 선택 영역 */
+    .employee-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .employee-header-row .field-group-title {
+      margin-top: 0;
+      margin-bottom: 4px;
+    }
+
+    .employee-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
+
+    .emp-chip {
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      border: 1px solid #d1d5db;
+      background: #f9fafb;
+      color: #374151;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .emp-chip.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #1d4ed8;
+      box-shadow: 0 0 0 1px rgba(37,99,235,0.4);
+    }
+
+    .emp-chip span.index {
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    /* 오른쪽 미리보기 */
+
+    .payslip-window {
+      border-radius: 12px;
+      border: 1px solid #d4d4d8;
+      background: #fdfdfd;
+      overflow: hidden;
+      font-size: 12px;
+      width: 180mm;
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
+    .window-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      background: #f3f4f6;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .window-topbar-left {
+      font-size: 12px;
+      color: #4b5563;
+    }
+
+    .window-topbar-right {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      color: #9ca3af;
+    }
+
+    .window-close {
+      font-size: 14px;
+      cursor: default;
+    }
+
+    .payslip-inner {
+      padding: 14px;
+      background: #ffffff;
+    }
+
+    .payslip-main-title {
+      text-align: center;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 10px 0 6px;
+      border-bottom: 2px solid #111827;
+      margin-bottom: 10px;
+    }
+
+    .payslip-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      background: var(--blue);
+      color: #fff;
+      border-radius: 5px 5px 0 0;
+      display: inline-block;
+      min-width: 70px;
+    }
+
+    .payslip-section {
+      border: 1px solid #d4d4d8;
+      border-radius: 6px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .payslip-section-body {
+      padding: 6px 8px 6px;
+      background: #f9fafb;
+    }
+
+    .info-table th,
+    .info-table td {
+      border: none;
+      padding: 3px 6px 2px;
+      font-size: 12px;
+    }
+
+    .info-table th {
+      width: 70px;
+      color: #4b5563;
+      font-weight: 500;
+      text-align: left;
+    }
+
+    .info-table td {
+      color: #111827;
+    }
+
+    .earn-table th,
+    .earn-table td,
+    .deduct-table th,
+    .deduct-table td {
+      font-size: 12px;
+    }
+
+    .right { text-align: right; }
+
+    .payslip-summary-bar {
+      margin-top: 10px;
+      padding: 6px 8px;
+      background: #eef2ff;
+      border-radius: 6px;
+      border: 1px solid #c7d2fe;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .payslip-summary-bar span.label {
+      color: #4b5563;
+    }
+
+    .payslip-summary-bar span.value {
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .work-table {
+      margin-top: 10px;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #d4d4d8;
+      background: #f9fafb;
+    }
+
+    .work-table table th,
+    .work-table table td {
+      font-size: 11px;
+      padding: 4px 4px;
+      text-align: center;
+    }
+
+    .work-table table th {
+      background: #f3f4ff;
+    }
+
+    .calc-table {
+      margin-top: 10px;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #d4d4d8;
+      background: #f9fafb;
+    }
+
+    .calc-header {
+      background: #e5e7eb;
+      text-align: center;
+      font-weight: 600;
+      padding: 4px 0;
+      border-bottom: 1px solid #d4d4d8;
+      font-size: 11px;
+    }
+
+    .calc-table table th,
+    .calc-table table td {
+      font-size: 11px;
+      padding: 4px 6px;
+    }
+
+    .footer-note {
+      margin-top: 8px;
+      text-align: right;
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .preview-bottom-buttons {
+      margin-top: 10px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      font-size: 11px;
+    }
+
+    /* 인쇄 시: 오른쪽 급여명세서만 출력 */
+    @media print {
+      body {
+        padding: 0;
+        margin: 0;
+        background: #fff;
+        display:flex;
+        justify-content:center;
+      }
+      #controls {
+        display: none !important;
+      }
+      h1, .sub-text {
+        display: none !important;
+      }
+      .app-shell {
+        max-width: none;
+        margin: 0;
+      }
+      .pane {
+        box-shadow: none;
+        border-radius: 0;
+      }
+      .pane .pane-header {
+        display:none !important;
+      }
+      .window-topbar,
+      .preview-bottom-buttons {
+        display:none !important;
+      }
+      .payslip-window {
+        border: 1px solid #d4d4d8;
+        box-shadow:none;
+        margin:5mm auto;
+        width:180mm;
+      }
+      .payslip-inner {
+        padding:16mm 18mm;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <h1>
+    <span class="logo-dot"></span> 급여명세서 생성기
+  </h1>
+  <div class="sub-text">
+    좌측에 정보를 입력하면 우측에 급여명세서가 실시간으로 만들어집니다. (PDF 저장은 브라우저 인쇄 &gt; PDF 저장)
+  </div>
+
+  <div class="layout">
+    <!-- 입력 영역 -->
+    <div class="pane pane-input" id="controls">
+      <div class="pane-header">
+        <div class="pane-title">
+          입력 정보
+          <span class="chip">실시간 미리보기</span>
+        </div>
+        <span class="badge-soft">기본값은 예시 명세서 기준</span>
+      </div>
+
+      <div class="pane-body">
+
+        <!-- 직원 선택 -->
+        <div class="employee-header-row">
+          <div class="field-group-title">직원 선택</div>
+          <button class="btn btn-outline" type="button" onclick="addEmployee()">
+            <span class="btn-icon">＋</span> 직원 추가
+          </button>
+        </div>
+        <div class="employee-list" id="employeeList"></div>
+
+        <!-- 기본 정보 -->
+        <div class="field-group-title">1. 기본 정보</div>
+
+<div class="grid">
+  <div class="field">
+    <label>급여월</label>
+    <input type="month" id="payMonth" value="2025-10" />
+  </div>
+  <div class="field">
+    <label>성명</label>
+    <input type="text" id="empName" value="박순창" />
+  </div>
+  <div class="field">
+    <label>사번</label>
+    <input type="text" id="empNo" value="2205150005" />
+  </div>
+  <div class="field">
+    <label>생년월일</label>
+    <input type="text" id="empBirth" value="1960-02-20" />
+  </div>
+  <div class="field">
+    <label>사업장명</label>
+    <input type="text" id="workplaceName" placeholder="사업장명" />
+  </div>
+</div>
+
+        <!-- 지급 항목 -->
+        <div class="field-group-title">2. 지급 항목</div>
+        <div class="table-mini">
+          <table id="earnTable">
+            <thead>
+              <tr>
+                <th style="width:52%;">항목명</th>
+                <th style="width:38%;">금액(원)</th>
+                <th style="width:10%;"> </th>
+              </tr>
+            </thead>
+<tbody>
+  <tr>
+    <td><input type="text" class="earn-name" value="기본급" /></td>
+    <td><input type="number" class="earn-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <td><input type="text" class="earn-name" value="고정연장" /></td>
+    <td><input type="number" class="earn-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <td><input type="text" class="earn-name" value="고정야간" /></td>
+    <td><input type="number" class="earn-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <td><input type="text" class="earn-name" value="식대" /></td>
+    <td><input type="number" class="earn-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <td><input type="text" class="earn-name" value="차량유지비" /></td>
+    <td><input type="number" class="earn-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <td><input type="text" class="earn-name" value="추가연장" /></td>
+    <td><input type="number" class="earn-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <td><input type="text" class="earn-name" value="추가야간" /></td>
+    <td><input type="number" class="earn-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <td><input type="text" class="earn-name" value="휴일수당" /></td>
+    <td><input type="number" class="earn-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <td><input type="text" class="earn-name" value="휴일연장" /></td>
+    <td><input type="number" class="earn-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+</tbody>
+            <tfoot>
+              <tr>
+                <th>지급총액</th>
+                <th class="right" id="earnTotal">0</th>
+                <th></th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div style="margin-top:6px;">
+          <button class="btn btn-outline" onclick="addEarnRow()">
+            <span class="btn-icon">＋</span> 지급 항목 추가
+          </button>
+        </div>
+
+        <!-- 공제 항목 -->
+        <div class="field-group-title">3. 공제 항목</div>
+        <div class="table-mini">
+          <table id="deductTable">
+            <thead>
+              <tr>
+                <th style="width:52%;">항목명</th>
+                <th style="width:38%;">금액(원)</th>
+                <th style="width:10%;"> </th>
+              </tr>
+            </thead>
+<tbody>
+  <tr>
+    <td><input type="text" class="ded-name" value="소득세" /></td>
+    <td><input type="number" class="ded-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <td><input type="text" class="ded-name" value="지방소득세" /></td>
+    <td><input type="number" class="ded-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <td><input type="text" class="ded-name" value="건강보험" /></td>
+    <td><input type="number" class="ded-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <td><input type="text" class="ded-name" value="장기요양" /></td>
+    <td><input type="number" class="ded-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <td><input type="text" class="ded-name" value="국민연금" /></td>
+    <td><input type="number" class="ded-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <td><input type="text" class="ded-name" value="고용보험" /></td>
+    <td><input type="number" class="ded-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <td><input type="text" class="ded-name" value="선지급" /></td>
+    <td><input type="number" class="ded-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <td><input type="text" class="ded-name" value="기타공제" /></td>
+    <td><input type="number" class="ded-amount" value="0" /></td>
+    <td class="right">
+      <button class="btn btn-danger" onclick="removeRow(this)">
+        <span class="btn-icon">✕</span>
+      </button>
+    </td>
+  </tr>
+</tbody>
+            <tfoot>
+              <tr>
+                <th>공제총액</th>
+                <th class="right" id="deductTotal">0</th>
+                <th></th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div style="margin-top:6px;">
+          <button class="btn btn-outline" onclick="addDeductRow()">
+            <span class="btn-icon">＋</span> 공제 항목 추가
+          </button>
+        </div>
+
+        <!-- 근무 정보 -->
+        <div class="field-group-title">4. 근무 정보</div>
+        <div class="table-mini">
+          <table>
+            <thead>
+              <tr>
+                <th>근무일수</th>
+                <th>근무시간</th>
+                <th>주휴시간</th>
+                <th>연장근로시간</th>
+                <th>야간근로시간</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input type="number" id="workDays" value="31" /></td>
+                <td><input type="number" id="workHours" value="0" /></td>
+                <td><input type="number" id="holidayHours" value="0" /></td>
+                <td><input type="number" id="overtimeHours" value="0" /></td>
+                <td><input type="number" id="nightHours" value="0" /></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-mini" style="margin-top:6px;">
+          <table>
+            <thead>
+              <tr>
+                <th>휴일근로시간</th>
+                <th>휴일연장시간</th>
+                <th>지각시간</th>
+                <th>조퇴시간</th>
+                <th>기타</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input type="number" id="holidayWorkHours" value="0" /></td>
+                <td><input type="number" id="holidayOverHours" value="0" /></td>
+                <td><input type="number" id="lateMinutes" value="0" /></td>
+                <td><input type="number" id="earlyLeaveMinutes" value="0" /></td>
+                <td><input type="number" id="etcMinutes" value="0" /></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 미리보기 영역 -->
+    <div class="pane">
+      <div class="pane-header">
+        <div class="pane-title">
+          미리보기
+          <span class="chip">출력 화면</span>
+        </div>
+      </div>
+      <div class="pane-body">
+        <div class="payslip-window">
+          <div class="window-topbar">
+            <div class="window-topbar-left">급여명세서</div>
+            <div class="window-topbar-right">
+              <span>□</span>
+              <span class="window-close">✕</span>
+            </div>
+          </div>
+
+          <div class="payslip-inner">
+            <div class="payslip-main-title" id="payslip-title">
+              2025년 10월 급여명세서
+            </div>
+
+            <div style="font-size: 11px; margin-bottom: 4px; color: #4b5563;">
+              사업장명 : <span id="out-workplace"></span>
+            </div>
+
+            <!-- 기본 정보 -->
+            <div class="payslip-section" style="border-radius: 6px;">
+              <div class="payslip-section-body">
+                <table class="info-table">
+                  <tr>
+                    <th>성 명 :</th>
+                    <td id="out-name">박순창 (2205150005)</td>
+                    <th>생년월일 :</th>
+                    <td id="out-birth">1960-02-20</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            <!-- 지급 항목 -->
+            <div style="margin-top: 10px;">
+              <span class="payslip-section-title">지급항목</span>
+              <div class="payslip-section">
+                <div class="payslip-section-body">
+                  <table class="earn-table">
+                    <thead>
+                      <tr>
+                        <th>항목명</th>
+                        <th class="right">금액(원)</th>
+                      </tr>
+                    </thead>
+                    <tbody id="out-earn-body"></tbody>
+                    <tfoot>
+                      <tr>
+                        <td class="right" style="font-weight:600;">지급총액 :</td>
+                        <td class="right" id="out-earn-total"></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- 공제 항목 -->
+            <div style="margin-top: 10px;">
+              <span class="payslip-section-title">공제항목</span>
+              <div class="payslip-section">
+                <div class="payslip-section-body">
+                  <table class="deduct-table">
+                    <thead>
+                      <tr>
+                        <th>항목명</th>
+                        <th class="right">금액(원)</th>
+                      </tr>
+                    </thead>
+                    <tbody id="out-deduct-body"></tbody>
+                    <tfoot>
+                      <tr>
+                        <td class="right" style="font-weight:600;">공제총액 :</td>
+                        <td class="right" id="out-deduct-total"></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- 실지급액 합계 -->
+            <div class="payslip-summary-bar">
+              <span class="label">지급총액 - 공제총액 = 실지급액</span>
+              <span class="value" id="out-net">0 원</span>
+            </div>
+
+            <!-- 근무 정보 -->
+            <div class="work-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>근무일수</th>
+                    <th>근무시간</th>
+                    <th>주휴시간</th>
+                    <th>연장근로시간</th>
+                    <th>야간근로시간</th>
+                    <th>휴일근로시간</th>
+                    <th>휴일연장시간</th>
+                    <th>지각시간</th>
+                    <th>조퇴시간</th>
+                    <th>기타</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td id="out-workDays">31</td>
+                    <td id="out-workHours">0</td>
+                    <td id="out-holidayHours">0</td>
+                    <td id="out-overtimeHours">0</td>
+                    <td id="out-nightHours">0</td>
+                    <td id="out-holidayWorkHours">0</td>
+                    <td id="out-holidayOverHours">0</td>
+                    <td id="out-lateMinutes">0</td>
+                    <td id="out-earlyLeaveMinutes">0</td>
+                    <td id="out-etcMinutes">0</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- 산출식 -->
+            <div class="calc-table">
+              <div class="calc-header">항목별 계산방법</div>
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:30%;">항목</th>
+                    <th>산출식 또는 산출방법</th>
+                  </tr>
+                </thead>
+<tbody>
+  <tr>
+    <td>소득세</td>
+    <td>근로소득간이세액표에 따름</td>
+  </tr>
+  <tr>
+    <td>지방소득세</td>
+    <td>소득세 × 10%</td>
+  </tr>
+  <tr>
+    <td>국민연금</td>
+    <td>기준소득월액 × 4.5%</td>
+  </tr>
+  <tr>
+    <td>고용보험</td>
+    <td>과세대상임금 × 0.9%</td>
+  </tr>
+  <tr>
+    <td>건강보험</td>
+    <td>과세대상임금 × 3.545%</td>
+  </tr>
+  <tr>
+    <td>장기요양보험</td>
+    <td>건강보험료 × 12.95%</td>
+  </tr>
+  <tr>
+    <td>기본급</td>
+    <td>근로계약기준에 따름</td>
+  </tr>
+</tbody>
+              </table>
+            </div>
+
+            <div class="footer-note">※ 수고하셨습니다.</div>
+
+            <div class="preview-bottom-buttons">
+              <button class="btn btn-outline" onclick="printAllPayslips()">출력(PDF)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 직원 데이터 배열
+  let employees = [];
+  let currentEmployeeIndex = 0;
+
+  // 기본 지급 / 공제항목 디폴트
+  const defaultEarnItems = [
+    { name: "기본급", amount: 0 },
+    { name: "고정연장", amount: 0 },
+    { name: "고정야간", amount: 0 },
+    { name: "식대", amount: 0 },
+    { name: "차량유지비", amount: 0 },
+    { name: "추가연장", amount: 0 },
+    { name: "추가야간", amount: 0 },
+    { name: "휴일수당", amount: 0 },
+    { name: "휴일연장", amount: 0 },
+  ];
+
+  const defaultDeductItems = [
+    { name: "소득세", amount: 0 },
+    { name: "지방소득세", amount: 0 },
+    { name: "건강보험", amount: 0 },
+    { name: "장기요양", amount: 0 },
+    { name: "국민연금", amount: 0 },
+    { name: "고용보험", amount: 0 },
+    { name: "선지급", amount: 0 },
+    { name: "기타공제", amount: 0 },
+  ];
+
+  function formatNumber(num) {
+    if (isNaN(num)) return "0";
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+
+  function renderEmployeeList() {
+    const list = document.getElementById("employeeList");
+    if (!list) return;
+    list.innerHTML = "";
+    employees.forEach((emp, idx) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "emp-chip" + (idx === currentEmployeeIndex ? " active" : "");
+      const label = emp.empName ? emp.empName : `직원 ${idx + 1}`;
+      btn.innerHTML = `<span class="index">${idx + 1}</span> ${label}`;
+      btn.onclick = function () { selectEmployee(idx); };
+      list.appendChild(btn);
+    });
+  }
+
+  function setFormData(emp) {
+    document.getElementById("payMonth").value = emp.payMonth || "";
+    document.getElementById("empName").value = emp.empName || "";
+    document.getElementById("empNo").value = emp.empNo || "";
+    document.getElementById("empBirth").value = emp.empBirth || "";
+    document.getElementById("workplaceName").value = emp.workplaceName || "";
+
+    // 지급 항목 재구성
+    const earnTbody = document.querySelector("#earnTable tbody");
+    earnTbody.innerHTML = "";
+    if (emp.earnItems && emp.earnItems.length) {
+      emp.earnItems.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="text" class="earn-name" value="${item.name || ""}" /></td>
+          <td><input type="number" class="earn-amount" value="${item.amount || 0}" /></td>
+          <td class="right">
+            <button class="btn btn-danger" onclick="removeRow(this)">
+              <span class="btn-icon">✕</span>
+            </button>
+          </td>
+        `;
+        earnTbody.appendChild(tr);
+      });
+    } else {
+      defaultEarnItems.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="text" class="earn-name" value="${item.name}" /></td>
+          <td><input type="number" class="earn-amount" value="${item.amount}" /></td>
+          <td class="right">
+            <button class="btn btn-danger" onclick="removeRow(this)">
+              <span class="btn-icon">✕</span>
+            </button>
+          </td>
+        `;
+        earnTbody.appendChild(tr);
+      });
+    }
+
+    // 공제 항목 재구성
+    const dedTbody = document.querySelector("#deductTable tbody");
+    dedTbody.innerHTML = "";
+    if (emp.dedItems && emp.dedItems.length) {
+      emp.dedItems.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="text" class="ded-name" value="${item.name || ""}" /></td>
+          <td><input type="number" class="ded-amount" value="${item.amount || 0}" /></td>
+          <td class="right">
+            <button class="btn btn-danger" onclick="removeRow(this)">
+              <span class="btn-icon">✕</span>
+            </button>
+          </td>
+        `;
+        dedTbody.appendChild(tr);
+      });
+    } else {
+      defaultDeductItems.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="text" class="ded-name" value="${item.name}" /></td>
+          <td><input type="number" class="ded-amount" value="${item.amount}" /></td>
+          <td class="right">
+            <button class="btn btn-danger" onclick="removeRow(this)">
+              <span class="btn-icon">✕</span>
+            </button>
+          </td>
+        `;
+        dedTbody.appendChild(tr);
+      });
+    }
+
+    // 근무 정보
+    document.getElementById("workDays").value = emp.workDays || 0;
+    document.getElementById("workHours").value = emp.workHours || 0;
+    document.getElementById("holidayHours").value = emp.holidayHours || 0;
+    document.getElementById("overtimeHours").value = emp.overtimeHours || 0;
+    document.getElementById("nightHours").value = emp.nightHours || 0;
+    document.getElementById("holidayWorkHours").value = emp.holidayWorkHours || 0;
+    document.getElementById("holidayOverHours").value = emp.holidayOverHours || 0;
+    document.getElementById("lateMinutes").value = emp.lateMinutes || 0;
+    document.getElementById("earlyLeaveMinutes").value = emp.earlyLeaveMinutes || 0;
+    document.getElementById("etcMinutes").value = emp.etcMinutes || 0;
+  }
+
+
+function addEmployee() {
+  // 현재 직원 내용 저장 (기존 직원 데이터는 그대로 유지)
+  updatePreview();
+
+  const baseMonth = document.getElementById("payMonth").value;
+  const baseWorkplace = document.getElementById("workplaceName").value || "";
+
+  // 새 직원은 항상 고정된 기본 지급/공제 항목 목록으로 시작
+  const newEmp = {
+    payMonth: baseMonth,
+    empName: "",
+    empNo: "",
+    empBirth: "",
+    workplaceName: baseWorkplace,
+    earnItems: defaultEarnItems.map(i => ({ ...i })),
+    dedItems: defaultDeductItems.map(i => ({ ...i })),
+    workDays: 0,
+    workHours: 0,
+    holidayHours: 0,
+    overtimeHours: 0,
+    nightHours: 0,
+    holidayWorkHours: 0,
+    holidayOverHours: 0,
+    lateMinutes: 0,
+    earlyLeaveMinutes: 0,
+    etcMinutes: 0
+  };
+
+  employees.push(newEmp);
+  // 현재 보고 있는 직원 인덱스는 그대로 두고, 리스트만 갱신 (화면의 기본값 셋팅은 안 변함)
+  renderEmployeeList();
+}
+
+  function selectEmployee(index) {
+    if (index === currentEmployeeIndex) return;
+    updatePreview(); // 현재 직원 저장
+    currentEmployeeIndex = index;
+    const emp = employees[index];
+    if (emp) {
+      setFormData(emp);
+      renderEmployeeList();
+      updatePreview();
+    }
+  }
+
+  function addEarnRow() {
+    const tbody = document.querySelector("#earnTable tbody");
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="text" class="earn-name" placeholder="항목명" /></td>
+      <td><input type="number" class="earn-amount" value="0" /></td>
+      <td class="right">
+        <button class="btn btn-danger" onclick="removeRow(this)">
+          <span class="btn-icon">✕</span>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+    updatePreview();
+  }
+
+  function addDeductRow() {
+    const tbody = document.querySelector("#deductTable tbody");
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="text" class="ded-name" placeholder="항목명" /></td>
+      <td><input type="number" class="ded-amount" value="0" /></td>
+      <td class="right">
+        <button class="btn btn-danger" onclick="removeRow(this)">
+          <span class="btn-icon">✕</span>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+    updatePreview();
+  }
+
+  function removeRow(btn) {
+    const tr = btn.closest("tr");
+    tr.parentNode.removeChild(tr);
+    updatePreview();
+  }
+
+  function updatePreview() {
+    // 기본 정보
+    const monthValue = document.getElementById("payMonth").value;
+    let title = "급여명세서";
+    if (monthValue) {
+      const [yy, mm] = monthValue.split("-");
+      title = `${yy}년 ${Number(mm)}월 급여명세서`;
+    }
+    document.getElementById("payslip-title").textContent = title;
+
+    const name = document.getElementById("empName").value || "";
+    const no = document.getElementById("empNo").value || "";
+    const birth = document.getElementById("empBirth").value || "";
+    const workplaceName = document.getElementById("workplaceName").value || "";
+
+    document.getElementById("out-name").textContent = no ? `${name} (${no})` : name;
+    document.getElementById("out-birth").textContent = birth;
+    const outWp = document.getElementById("out-workplace");
+    if (outWp) outWp.textContent = workplaceName;
+
+    // 지급 항목
+    let earnTotal = 0;
+    const outEarnBody = document.getElementById("out-earn-body");
+    outEarnBody.innerHTML = "";
+    const earnItems = [];
+    document.querySelectorAll("#earnTable tbody tr").forEach(tr => {
+      const n = tr.querySelector(".earn-name").value.trim();
+      const a = Number(tr.querySelector(".earn-amount").value || 0);
+      if (!n && !a) return;
+      earnTotal += a;
+      earnItems.push({ name: n, amount: a });
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${n}</td>
+        <td class="right">${formatNumber(a)}</td>
+      `;
+      outEarnBody.appendChild(row);
+    });
+    document.getElementById("earnTotal").textContent = formatNumber(earnTotal);
+    document.getElementById("out-earn-total").textContent = formatNumber(earnTotal);
+
+    // 공제 항목
+    let deductTotal = 0;
+    const outDedBody = document.getElementById("out-deduct-body");
+    outDedBody.innerHTML = "";
+    const dedItems = [];
+    document.querySelectorAll("#deductTable tbody tr").forEach(tr => {
+      const n = tr.querySelector(".ded-name").value.trim();
+      const a = Number(tr.querySelector(".ded-amount").value || 0);
+      if (!n && !a) return;
+      deductTotal += a;
+      dedItems.push({ name: n, amount: a });
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${n}</td>
+        <td class="right">${formatNumber(a)}</td>
+      `;
+      outDedBody.appendChild(row);
+    });
+    document.getElementById("deductTotal").textContent = formatNumber(deductTotal);
+    document.getElementById("out-deduct-total").textContent = formatNumber(deductTotal);
+
+    const net = earnTotal - deductTotal;
+    document.getElementById("out-net").textContent = `${formatNumber(net)} 원`;
+
+    // 근무 정보
+    const fields = [
+      ["workDays", "out-workDays"],
+      ["workHours", "out-workHours"],
+      ["holidayHours", "out-holidayHours"],
+      ["overtimeHours", "out-overtimeHours"],
+      ["nightHours", "out-nightHours"],
+      ["holidayWorkHours", "out-holidayWorkHours"],
+      ["holidayOverHours", "out-holidayOverHours"],
+      ["lateMinutes", "out-lateMinutes"],
+      ["earlyLeaveMinutes", "out-earlyLeaveMinutes"],
+      ["etcMinutes", "out-etcMinutes"],
+    ];
+    const workData = {};
+    fields.forEach(([inputId, outId]) => {
+      const v = document.getElementById(inputId).value || 0;
+      document.getElementById(outId).textContent = v;
+      workData[inputId] = v;
+    });
+
+    // 현재 직원 데이터 저장
+    const empData = {
+      payMonth: monthValue,
+      empName: name,
+      empNo: no,
+      empBirth: birth,
+      workplaceName: workplaceName,
+      earnItems: earnItems,
+      dedItems: dedItems,
+      workDays: workData.workDays || 0,
+      workHours: workData.workHours || 0,
+      holidayHours: workData.holidayHours || 0,
+      overtimeHours: workData.overtimeHours || 0,
+      nightHours: workData.nightHours || 0,
+      holidayWorkHours: workData.holidayWorkHours || 0,
+      holidayOverHours: workData.holidayOverHours || 0,
+      lateMinutes: workData.lateMinutes || 0,
+      earlyLeaveMinutes: workData.earlyLeaveMinutes || 0,
+      etcMinutes: workData.etcMinutes || 0
+    };
+
+    if (employees.length === 0) {
+      employees.push(empData);
+      currentEmployeeIndex = 0;
+    } else {
+      employees[currentEmployeeIndex] = empData;
+    }
+    renderEmployeeList();
+  }
+
+  function buildPayslipPage(emp) {
+    const monthValue = emp.payMonth || "";
+    let title = "급여명세서";
+    if (monthValue) {
+      const parts = monthValue.split("-");
+      if (parts.length === 2) {
+        title = parts[0] + "년 " + Number(parts[1]) + "월 급여명세서";
+      }
+    }
+    const name = emp.empName || "";
+    const no = emp.empNo || "";
+    const birth = emp.empBirth || "";
+    const workplaceName = emp.workplaceName || "";
+
+    let earnTotal = 0;
+    let earnRows = "";
+    (emp.earnItems || []).forEach(item => {
+      const n = (item.name || "").trim();
+      const a = Number(item.amount || 0);
+      if (!n && !a) return;
+      earnTotal += a;
+      earnRows += `<tr><td>${n}</td><td class="right">${formatNumber(a)}</td></tr>`;
+    });
+
+    let deductTotal = 0;
+    let deductRows = "";
+    (emp.dedItems || []).forEach(item => {
+      const n = (item.name || "").trim();
+      const a = Number(item.amount || 0);
+      if (!n && !a) return;
+      deductTotal += a;
+      deductRows += `<tr><td>${n}</td><td class="right">${formatNumber(a)}</td></tr>`;
+    });
+
+    const net = earnTotal - deductTotal;
+
+    const work = {
+      workDays: emp.workDays || 0,
+      workHours: emp.workHours || 0,
+      holidayHours: emp.holidayHours || 0,
+      overtimeHours: emp.overtimeHours || 0,
+      nightHours: emp.nightHours || 0,
+      holidayWorkHours: emp.holidayWorkHours || 0,
+      holidayOverHours: emp.holidayOverHours || 0,
+      lateMinutes: emp.lateMinutes || 0,
+      earlyLeaveMinutes: emp.earlyLeaveMinutes || 0,
+      etcMinutes: emp.etcMinutes || 0,
+    };
+
+    return `
+      <div class="payslip-page">
+        <div class="payslip-title">${title}</div>
+        <div class="payslip-target">사업장명 : ${workplaceName}</div>
+
+        <div class="payslip-section info">
+          <table class="info-table">
+            <tr>
+              <th>성 명 :</th>
+              <td>${no ? name + " (" + no + ")" : name}</td>
+              <th>생년월일 :</th>
+              <td>${birth}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="payslip-section-block">
+          <span class="section-title">지급항목</span>
+          <div class="payslip-section">
+            <table class="earn-table">
+              <thead>
+                <tr>
+                  <th>항목명</th>
+                  <th class="right">금액(원)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${earnRows}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td class="right" style="font-weight:600;">지급총액 :</td>
+                  <td class="right">${formatNumber(earnTotal)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <div class="payslip-section-block">
+          <span class="section-title">공제항목</span>
+          <div class="payslip-section">
+            <table class="deduct-table">
+              <thead>
+                <tr>
+                  <th>항목명</th>
+                  <th class="right">금액(원)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${deductRows}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td class="right" style="font-weight:600;">공제총액 :</td>
+                  <td class="right">${formatNumber(deductTotal)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <div class="payslip-summary-print">
+          <span class="label">지급총액 - 공제총액 = 실지급액</span>
+          <span class="value">${formatNumber(net)} 원</span>
+        </div>
+
+        <div class="work-table">
+          <table>
+            <thead>
+              <tr>
+                <th>근무일수</th>
+                <th>근무시간</th>
+                <th>주휴시간</th>
+                <th>연장근로시간</th>
+                <th>야간근로시간</th>
+                <th>휴일근로시간</th>
+                <th>휴일연장시간</th>
+                <th>지각시간</th>
+                <th>조퇴시간</th>
+                <th>기타</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${work.workDays}</td>
+                <td>${work.workHours}</td>
+                <td>${work.holidayHours}</td>
+                <td>${work.overtimeHours}</td>
+                <td>${work.nightHours}</td>
+                <td>${work.holidayWorkHours}</td>
+                <td>${work.holidayOverHours}</td>
+                <td>${work.lateMinutes}</td>
+                <td>${work.earlyLeaveMinutes}</td>
+                <td>${work.etcMinutes}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="footer-note-print">※ 수고하셨습니다.</div>
+      </div>
+    `;
+  }
+
+  function printAllPayslips() {
+    // 현재 직원 먼저 저장
+    updatePreview();
+
+    if (!employees.length) {
+      window.print();
+      return;
+    }
+
+    const win = window.open("", "_blank");
+    const doc = win.document;
+
+    doc.open();
+    doc.write(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>급여명세서 전체 출력</title>
+<style>
+  body {
+  margin: 0;
+  padding: 0;
+  background: #ffffff;
+}
+.payslip-page {
+  width: 190mm;
+  margin: 5mm auto;
+  padding: 10mm 14mm;
+  box-sizing: border-box;
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: 12px;
+}
+.payslip-title {
+  text-align: center;
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+.payslip-target {
+  font-size: 11px;
+  margin-bottom: 6px;
+  color: #4b5563;
+}
+.payslip-section {
+  border: 1px solid #d4d4d8;
+  border-radius: 6px;
+  margin-top: 8px;
+  overflow: hidden;
+  background: #f9fafb;
+}
+.payslip-section.info {
+  margin-top: 4px;
+}
+.payslip-section-block {
+  margin-top: 10px;
+}
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  background: #1c6fdc;
+  color: #fff;
+  border-radius: 6px 6px 0 0;
+  display: inline-block;
+  min-width: 80px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.info-table th,
+.info-table td {
+  border: 1px solid #e5e7eb;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.info-table th {
+  width: 70px;
+  color: #4b5563;
+  font-weight: 500;
+  text-align: left;
+  background: #f3f4ff;
+}
+.info-table td {
+  color: #111827;
+  background: #ffffff;
+}
+.earn-table th,
+.earn-table td,
+.deduct-table th,
+.deduct-table td {
+  border: 1px solid #e5e7eb;
+  padding: 5px 8px;
+  font-size: 12px;
+}
+.earn-table th,
+.deduct-table th {
+  background: #f3f4ff;
+  font-weight: 600;
+  color: #374151;
+}
+.right { text-align: right; }
+.payslip-summary-print {
+  margin-top: 10px;
+  padding: 7px 10px;
+  background: #eef2ff;
+  border-radius: 6px;
+  border: 1px solid #c7d2fe;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+.payslip-summary-print .label {
+  color: #4b5563;
+}
+.payslip-summary-print .value {
+  font-weight: 700;
+  color: #111827;
+}
+.work-table {
+  margin-top: 10px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #d4d4d8;
+  background: #f9fafb;
+}
+.work-table table th,
+.work-table table td {
+  font-size: 11px;
+  padding: 4px 4px;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+}
+.work-table table th {
+  background: #f3f4ff;
+  font-weight: 600;
+}
+.footer-note-print {
+  margin-top: 6px;
+  text-align: right;
+  font-size: 11px;
+  color: #9ca3af;
+}
+.page-break {
+  page-break-after: always;
+}
+@page {
+  margin: 5mm;
+}
+@media print {
+  .page-break {
+    page-break-after: always;
+  }
+}</style>
+</head>
+<body>`);
+
+    employees.forEach((emp, idx) => {
+      doc.write(buildPayslipPage(emp));
+      if (idx < employees.length - 1) {
+        doc.write('<div class="page-break"></div>');
+      }
+    });
+
+    doc.write("</body></html>");
+    doc.close();
+    win.focus();
+    win.print();
+  }
+
+  document.addEventListener("input", (e) => {
+    if (e.target.matches("#controls input")) {
+      updatePreview();
+    }
+  });
+
+  window.addEventListener("load", () => {
+    // 초기 한 명 세팅 후 미리보기
+    employees.push({});
+    currentEmployeeIndex = 0;
+    renderEmployeeList();
+    updatePreview();
+  });
+</script>
+</body>
+</html>
